@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Exporter</title>
+</head>
+<body>
+    <button id="exportBtn">Export Images</button>
+    <script>
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            parent.postMessage({ pluginMessage: { type: 'export-images' } }, '*');
+        });
+
+        window.onmessage = (event) => {
+            const { type, images } = event.data.pluginMessage;
+            if (type === 'batch-image-data') {
+                images.forEach((image, index) => {
+                    const byteArray = new Uint8Array(JSON.parse(image.data));
+                    const blob = new Blob([byteArray], { type: 'image/png' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${image.name}.png`;
+                    document.body.appendChild(a);
+                    setTimeout(() => { 
+                        a.click(); 
+                        document.body.removeChild(a); 
+                        URL.revokeObjectURL(url); 
+                    }, index * 100); // Stagger downloads
+                });
+            } else if (type === 'no-images-found') {
+                console.log('No images found in the selected frames.');
+            }
+        };
+    </script>
+</body>
+</html>
